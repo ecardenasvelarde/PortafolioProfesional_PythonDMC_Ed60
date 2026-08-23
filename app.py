@@ -19,12 +19,6 @@ AUTOR_NOMBRE = "Tu Nombre Completo"
 AUTOR_CURSO = "Especialización en Python for Analytics - DMC Ed.60"
 AUTOR_ANIO = "2026"
 
-# -----------------------------------------------------------------
-# ESTADO DE LA SESIÓN
-# -----------------------------------------------------------------
-if "df" not in st.session_state:
-    st.session_state.df = None
-
 
 # -----------------------------------------------------------------
 # FUNCIÓN PERSONALIZADA (requisito Ítem 2)
@@ -67,7 +61,7 @@ class DataAnalyzer:
 
 
 # -----------------------------------------------------------------
-# SIDEBAR: logos + navegación (SOLO 2 MÓDULOS)
+# SIDEBAR: logos + navegación (2 módulos)
 # -----------------------------------------------------------------
 st.sidebar.image('DMC.png')
 modulo = st.sidebar.selectbox("Seleccione un Módulo", ["Home", "Carga de Dataset"])
@@ -109,23 +103,21 @@ else:
 
     archivo = st.file_uploader("Selecciona el archivo CSV", type=["csv"])
 
+    # Variable local: solo existe mientras dure esta ejecución del script.
+    df = None
+
     if archivo is not None:
         try:
             df = pd.read_csv(archivo, sep=";")
-            st.session_state.df = df
             st.success(f"✅ Archivo cargado correctamente: **{archivo.name}**")
         except Exception as e:
             st.error(f"❌ Ocurrió un error al leer el archivo: {e}")
-            st.session_state.df = None
+            df = None
 
-    # ---------------------------------------------------------
-    # Si NO hay datos cargados, avisamos y no mostramos nada más.
-    # ---------------------------------------------------------
-    if st.session_state.df is None:
+    # Si no hay datos, avisamos y no mostramos nada más.
+    if df is None:
         st.info("⬆️ Aún no se ha cargado ningún archivo.")
         st.stop()
-
-    df = st.session_state.df
 
     st.subheader("Vista previa del dataset")
     st.dataframe(df.head())
@@ -138,12 +130,11 @@ else:
     st.divider()
 
     # ---------------------------------------------------------
-    # A partir de aquí: Análisis Exploratorio de Datos (EDA)
-    # Vive DENTRO del módulo "Carga de Dataset", como pediste.
+    # Análisis Exploratorio de Datos (EDA)
     # ---------------------------------------------------------
     st.header("📊 Análisis Exploratorio de Datos (EDA)")
 
-    analyzer = DataAnalyzer(df)  # instanciamos la clase una vez
+    analyzer = DataAnalyzer(df)
 
     tabs = st.tabs([
         "1. Info general", "2. Tipos de variable", "3. Estadísticas",

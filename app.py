@@ -291,7 +291,67 @@ else:
             """
         )
 
-    # ---------- Ítems 5 al 10: pendientes ----------
-    for i in range(4, 10):
+    # ---------- Ítem 5: Distribución de variables numéricas ----------
+    with tabs[4]:
+        st.subheader("Distribución de variables numéricas")
+        st.markdown(
+            "Los histogramas nos permiten ver **cómo se reparten los "
+            "valores** de una variable: si son simétricos, si están "
+            "concentrados en un rango o si tienen una \"cola\" larga "
+            "hacia algún lado (sesgo)."
+        )
+
+        # ---- Vista general: una grilla con todas las numéricas ----
+        st.markdown("**Vista general**")
+        num_cols = analyzer.columnas_numericas()
+        columnas_por_fila = 3
+
+        for i in range(0, len(num_cols), columnas_por_fila):
+            fila_cols = st.columns(columnas_por_fila)
+            for j, col_name in enumerate(num_cols[i:i + columnas_por_fila]):
+                with fila_cols[j]:
+                    fig, ax = plt.subplots(figsize=(4, 3))
+                    sns.histplot(df[col_name], kde=True, ax=ax, color="#4C72B0")
+                    ax.set_title(col_name, fontsize=10)
+                    ax.set_xlabel("")
+                    st.pyplot(fig)
+                    plt.close(fig)  # liberamos memoria; si no, con muchos gráficos la app se pone lenta
+
+        st.divider()
+
+        # ---- Vista detallada e interactiva ----
+        st.markdown("**Vista detallada (elige una variable)**")
+
+        col_sel, col_slider = st.columns(2)
+        with col_sel:
+            variable_elegida = st.selectbox("Variable numérica:", num_cols, key="hist_var")
+        with col_slider:
+            bins = st.slider("Número de bins (barras):", min_value=10, max_value=100, value=30, key="hist_bins")
+
+        fig, ax = plt.subplots(figsize=(8, 4))
+        sns.histplot(df[variable_elegida], bins=bins, kde=True, ax=ax, color="#4C72B0")
+        ax.set_title(f"Distribución de {variable_elegida}")
+        st.pyplot(fig)
+        plt.close(fig)
+
+        # Interpretación automática basada en el sesgo (skewness)
+        sesgo = df[variable_elegida].skew()
+        if sesgo > 1:
+            lectura = "sesgada a la **derecha** (cola larga hacia valores altos)"
+        elif sesgo < -1:
+            lectura = "sesgada a la **izquierda** (cola larga hacia valores bajos)"
+        else:
+            lectura = "razonablemente **simétrica**"
+
+        st.markdown(
+            f"""
+            **Interpretación visual:** la variable `{variable_elegida}` tiene un
+            coeficiente de sesgo (skewness) de **{sesgo:.2f}**, lo que indica una
+            distribución {lectura}.
+            """
+        )
+
+    # ---------- Ítems 6 al 10: pendientes ----------
+    for i in range(5, 10):
         with tabs[i]:
             st.info("🚧 Este ítem lo construiremos en el siguiente paso.")

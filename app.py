@@ -3,7 +3,7 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 
-st.sidebar.image('Logo.png')
+st.sidebar.image('DMC.png')
 modulo = st.sidebar.selectbox("Seleccione un Módulo", ["Home","Carga de Dataset"])
 st.sidebar.image('Python_logo.png')
 if modulo == "Home":

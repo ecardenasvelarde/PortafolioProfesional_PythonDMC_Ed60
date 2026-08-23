@@ -27,18 +27,10 @@ if "df" not in st.session_state:
 
 
 # -----------------------------------------------------------------
-# FUNCIÓN PERSONALIZADA
+# FUNCIÓN PERSONALIZADA (requisito Ítem 2)
 # -----------------------------------------------------------------
-# Requisito del Ítem 2: clasificar cada columna como Numérica o
-# Categórica. La escribimos como función independiente (no como
-# método de la clase) para cumplir explícitamente con el punto
-# "Uso de una función personalizada" del enunciado. Luego la
-# vamos a usar DENTRO de un método de la clase DataAnalyzer.
 def identificar_tipo_variable(serie: pd.Series) -> str:
-    """
-    Recibe una columna (pd.Series) y devuelve 'Numérica' o
-    'Categórica' según su tipo de dato.
-    """
+    """Clasifica una columna como 'Numérica' o 'Categórica'."""
     if pd.api.types.is_numeric_dtype(serie):
         return "Numérica"
     else:
@@ -46,25 +38,14 @@ def identificar_tipo_variable(serie: pd.Series) -> str:
 
 
 # -----------------------------------------------------------------
-# CLASE DataAnalyzer (Programación Orientada a Objetos)
+# CLASE DataAnalyzer (POO)
 # -----------------------------------------------------------------
-# Esta clase encapsula la lógica de análisis: recibe un DataFrame
-# una sola vez (en __init__) y expone métodos que devuelven
-# resultados listos para mostrar en Streamlit. Así separamos la
-# LÓGICA de análisis de la lógica de INTERFAZ (que vive en el
-# resto del script).
 class DataAnalyzer:
     def __init__(self, df: pd.DataFrame):
         self.df = df
 
     def info_general(self) -> str:
-        """
-        Ítem 1: equivalente a df.info(), pero como texto.
-        df.info() normalmente IMPRIME el resultado en consola y
-        no lo retorna (devuelve None), así que usamos un buffer
-        de texto (io.StringIO) como truco para capturarlo y poder
-        mostrarlo dentro de Streamlit con st.text().
-        """
+        """Ítem 1: equivalente a df.info(), capturado como texto."""
         buffer = io.StringIO()
         self.df.info(buf=buffer)
         return buffer.getvalue()
@@ -74,12 +55,7 @@ class DataAnalyzer:
         return self.df.isnull().sum()
 
     def clasificar_variables(self) -> pd.DataFrame:
-        """
-        Ítem 2: recorre cada columna del dataset y usa la función
-        personalizada `identificar_tipo_variable` para clasificarla.
-        Devuelve una tabla con: columna, tipo de dato original y
-        clasificación (Numérica / Categórica).
-        """
+        """Ítem 2: clasifica cada columna usando la función personalizada."""
         registros = []
         for columna in self.df.columns:
             registros.append({
@@ -91,17 +67,14 @@ class DataAnalyzer:
 
 
 # -----------------------------------------------------------------
-# SIDEBAR: logos + navegación
+# SIDEBAR: logos + navegación (SOLO 2 MÓDULOS)
 # -----------------------------------------------------------------
 st.sidebar.image('DMC.png')
-modulo = st.sidebar.selectbox(
-    "Seleccione un Módulo",
-    ["Home", "Carga de Dataset", "Análisis Exploratorio (EDA)"]
-)
+modulo = st.sidebar.selectbox("Seleccione un Módulo", ["Home", "Carga de Dataset"])
 st.sidebar.image('Python_logo.png')
 
 # -----------------------------------------------------------------
-# MÓDULO: HOME
+# MÓDULO 1: HOME
 # -----------------------------------------------------------------
 if modulo == "Home":
     st.title("🏦 Análisis Exploratorio de Datos: BankMarketing")
@@ -128,11 +101,11 @@ if modulo == "Home":
     )
 
 # -----------------------------------------------------------------
-# MÓDULO: CARGA DE DATASET
+# MÓDULO 2: CARGA DE DATASET  ->  incluye el EDA completo debajo
 # -----------------------------------------------------------------
-elif modulo == "Carga de Dataset":
+else:
     st.title("📂 Carga del Dataset")
-    st.write("Sube el archivo `BankMarketing.csv` para habilitar el EDA.")
+    st.write("Sube el archivo `BankMarketing.csv` para habilitar el análisis.")
 
     archivo = st.file_uploader("Selecciona el archivo CSV", type=["csv"])
 
@@ -145,34 +118,33 @@ elif modulo == "Carga de Dataset":
             st.error(f"❌ Ocurrió un error al leer el archivo: {e}")
             st.session_state.df = None
 
-    if st.session_state.df is not None:
-        df = st.session_state.df
-        st.subheader("Vista previa del dataset")
-        st.dataframe(df.head())
-        col1, col2 = st.columns(2)
-        with col1:
-            st.metric("Filas", f"{df.shape[0]:,}")
-        with col2:
-            st.metric("Columnas", f"{df.shape[1]:,}")
-    else:
-        st.info("⬆️ Aún no se ha cargado ningún archivo.")
-
-# -----------------------------------------------------------------
-# MÓDULO: ANÁLISIS EXPLORATORIO DE DATOS (EDA)
-# -----------------------------------------------------------------
-else:
-    st.title("📊 Análisis Exploratorio de Datos (EDA)")
-
-    # Ningún análisis debe correr si no hay datos cargados.
+    # ---------------------------------------------------------
+    # Si NO hay datos cargados, avisamos y no mostramos nada más.
+    # ---------------------------------------------------------
     if st.session_state.df is None:
-        st.warning("⚠️ Primero debes cargar el dataset en el módulo 'Carga de Dataset'.")
+        st.info("⬆️ Aún no se ha cargado ningún archivo.")
         st.stop()
 
     df = st.session_state.df
-    analyzer = DataAnalyzer(df)  # instanciamos la clase UNA vez
 
-    # 10 ítems -> 10 tabs. Por ahora solo desarrollamos el 1 y el 2;
-    # el resto queda como placeholder para los próximos pasos.
+    st.subheader("Vista previa del dataset")
+    st.dataframe(df.head())
+    col1, col2 = st.columns(2)
+    with col1:
+        st.metric("Filas", f"{df.shape[0]:,}")
+    with col2:
+        st.metric("Columnas", f"{df.shape[1]:,}")
+
+    st.divider()
+
+    # ---------------------------------------------------------
+    # A partir de aquí: Análisis Exploratorio de Datos (EDA)
+    # Vive DENTRO del módulo "Carga de Dataset", como pediste.
+    # ---------------------------------------------------------
+    st.header("📊 Análisis Exploratorio de Datos (EDA)")
+
+    analyzer = DataAnalyzer(df)  # instanciamos la clase una vez
+
     tabs = st.tabs([
         "1. Info general", "2. Tipos de variable", "3. Estadísticas",
         "4. Nulos", "5. Distribuciones", "6. Categóricas",
@@ -187,12 +159,11 @@ else:
             "Usamos `.info()` para ver de un vistazo cuántas filas tiene "
             "cada columna, su tipo de dato, y si hay valores nulos."
         )
-
-        col1, col2 = st.columns(2)
-        with col1:
+        c1, c2 = st.columns(2)
+        with c1:
             st.markdown("**Salida de `df.info()`**")
             st.text(analyzer.info_general())
-        with col2:
+        with c2:
             st.markdown("**Conteo de valores nulos por columna**")
             st.dataframe(analyzer.conteo_nulos())
 
@@ -209,16 +180,13 @@ else:
             "Clasificamos cada columna como **Numérica** o **Categórica** "
             "usando una función personalizada (`identificar_tipo_variable`)."
         )
-
         clasificacion = analyzer.clasificar_variables()
-
-        col1, col2 = st.columns([2, 1])
-        with col1:
+        c1, c2 = st.columns([2, 1])
+        with c1:
             st.dataframe(clasificacion, use_container_width=True)
-        with col2:
-            conteo = clasificacion["Clasificación"].value_counts()
+        with c2:
             st.markdown("**Resumen**")
-            st.dataframe(conteo)
+            st.dataframe(clasificacion["Clasificación"].value_counts())
 
     # ---------- Ítems 3 al 10: pendientes ----------
     for i in range(2, 10):

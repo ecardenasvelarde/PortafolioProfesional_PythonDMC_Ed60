@@ -8,22 +8,12 @@ st.set_page_config(
     page_icon="🏦"
 )
 
-# -----------------------------------------------------------------
-# ESTADO DE LA SESIÓN
-# -----------------------------------------------------------------
-# Streamlit vuelve a correr TODO el script cada vez que cambias
-# el selectbox del sidebar. Si no guardamos el dataframe aquí,
-# se perdería al pasar de "Carga de Dataset" a otro módulo.
 if "df" not in st.session_state:
     st.session_state.df = None
 
-# -----------------------------------------------------------------
-# SIDEBAR: logos + navegación
-# -----------------------------------------------------------------
 st.sidebar.image('DMC.png')
 modulo = st.sidebar.selectbox("Seleccione un Módulo", ["Home", "Carga de Dataset"])
 st.sidebar.image('Python_logo.png')
-
 # -----------------------------------------------------------------
 # MÓDULO: HOME
 # -----------------------------------------------------------------
@@ -35,9 +25,7 @@ if modulo == "Home":
         ### 🎯 Objetivo del análisis
         Esta aplicación explora el dataset de una campaña de marketing
         bancario para entender **qué factores se relacionan con que un
-        cliente acepte o no un depósito a plazo**. La efectividad de la
-        campaña cayó de 12% a 8% en los últimos 6 meses, y el objetivo
-        de este EDA es encontrar pistas sobre por qué.
+        cliente acepte o no un depósito a plazo**.
 
         ### 👤 Datos del autor
         - **Nombre:** Erick Eduardo Cárdenas Velarde

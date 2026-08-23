@@ -3,21 +3,10 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 
-# -----------------------------------------------------------------
-# CONFIGURACIÓN DE LA PÁGINA
-# -----------------------------------------------------------------
 st.set_page_config(
     page_title="EDA - BankMarketing",
     page_icon="🏦"
-    #layout="wide"
 )
-
-# -----------------------------------------------------------------
-# VARIABLES GLOBALES (datos del autor)
-# -----------------------------------------------------------------
-AUTOR_NOMBRE = "Erick Eduardo Cárdenas Velarde"
-AUTOR_CURSO = "Especialización en Python for Analytics - DMC Ed.60"
-AUTOR_ANIO = "2026"
 
 # -----------------------------------------------------------------
 # ESTADO DE LA SESIÓN
@@ -51,9 +40,9 @@ if modulo == "Home":
         de este EDA es encontrar pistas sobre por qué.
 
         ### 👤 Datos del autor
-        - **Nombre:** {AUTOR_NOMBRE}
-        - **Curso:** {AUTOR_CURSO}
-        - **Año:** {AUTOR_ANIO}
+        - **Nombre:** Erick Eduardo Cárdenas Velarde
+        - **Curso:** Especialización en Python for Analytics - DMC Ed.60
+        - **Año:** 2026
 
         ### 📊 Sobre el dataset
         `BankMarketing.csv` contiene **41,188 registros** y **21 variables**,

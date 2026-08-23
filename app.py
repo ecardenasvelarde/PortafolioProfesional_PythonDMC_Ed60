@@ -8,8 +8,8 @@ import numpy as np
 # -----------------------------------------------------------------
 st.set_page_config(
     page_title="EDA - BankMarketing",
-    page_icon="🏦",
-    layout="wide"
+    page_icon="🏦"
+    #layout="wide"
 )
 
 # -----------------------------------------------------------------
@@ -40,7 +40,7 @@ st.sidebar.image('Python_logo.png')
 # -----------------------------------------------------------------
 if modulo == "Home":
     st.title("🏦 Análisis Exploratorio de Datos: BankMarketing")
-
+    st.divider()
     st.markdown(
         f"""
         ### 🎯 Objetivo del análisis

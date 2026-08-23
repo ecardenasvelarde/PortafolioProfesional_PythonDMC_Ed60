@@ -2,6 +2,8 @@ import io
 import streamlit as st
 import pandas as pd
 import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
 
 # -----------------------------------------------------------------
 # CONFIGURACIÓN DE LA PÁGINA
@@ -38,18 +40,17 @@ class DataAnalyzer:
     def __init__(self, df: pd.DataFrame):
         self.df = df
 
+    # ---------- Ítem 1 ----------
     def info_general(self) -> str:
-        """Ítem 1: equivalente a df.info(), capturado como texto."""
         buffer = io.StringIO()
         self.df.info(buf=buffer)
         return buffer.getvalue()
 
     def conteo_nulos(self) -> pd.Series:
-        """Ítem 1: cantidad de valores nulos por columna."""
         return self.df.isnull().sum()
 
+    # ---------- Ítem 2 ----------
     def clasificar_variables(self) -> pd.DataFrame:
-        """Ítem 2: clasifica cada columna usando la función personalizada."""
         registros = []
         for columna in self.df.columns:
             registros.append({
@@ -58,6 +59,39 @@ class DataAnalyzer:
                 "Clasificación": identificar_tipo_variable(self.df[columna])
             })
         return pd.DataFrame(registros)
+
+    def columnas_numericas(self) -> list:
+        return [c for c in self.df.columns if identificar_tipo_variable(self.df[c]) == "Numérica"]
+
+    def columnas_categoricas(self) -> list:
+        return [c for c in self.df.columns if identificar_tipo_variable(self.df[c]) == "Categórica"]
+
+    # ---------- Ítem 3 ----------
+    def estadisticas_descriptivas(self) -> pd.DataFrame:
+        """
+        describe() aplicado solo a las columnas numéricas, transpuesto
+        (.T) para que cada FILA sea una variable y cada COLUMNA una
+        métrica (mean, std, min, max, etc.) — se lee más fácil así.
+        """
+        return self.df[self.columnas_numericas()].describe().T
+
+    # ---------- Ítem 4 ----------
+    def valores_unknown(self) -> pd.DataFrame:
+        """
+        Este dataset no tiene NaN reales, pero usa el texto 'unknown'
+        como equivalente a un valor faltante en varias columnas
+        categóricas. Contamos cuántos 'unknown' hay por columna.
+        """
+        registros = []
+        for columna in self.columnas_categoricas():
+            n_unknown = (self.df[columna] == "unknown").sum()
+            if n_unknown > 0:
+                registros.append({
+                    "Variable": columna,
+                    "Cantidad 'unknown'": n_unknown,
+                    "Porcentaje": round(n_unknown / len(self.df) * 100, 2)
+                })
+        return pd.DataFrame(registros).sort_values("Cantidad 'unknown'", ascending=False)
 
 
 # -----------------------------------------------------------------
@@ -90,7 +124,7 @@ if modulo == "Home":
         ("no") la campaña.
 
         ### 🛠️ Tecnologías utilizadas
-        Python · Pandas · NumPy · Streamlit
+        Python · Pandas · NumPy · Streamlit · Matplotlib · Seaborn
         """
     )
 
@@ -102,8 +136,6 @@ else:
     st.write("Sube el archivo `BankMarketing.csv` para habilitar el análisis.")
 
     archivo = st.file_uploader("Selecciona el archivo CSV", type=["csv"])
-
-    # Variable local: solo existe mientras dure esta ejecución del script.
     df = None
 
     if archivo is not None:
@@ -114,7 +146,6 @@ else:
             st.error(f"❌ Ocurrió un error al leer el archivo: {e}")
             df = None
 
-    # Si no hay datos, avisamos y no mostramos nada más.
     if df is None:
         st.info("⬆️ Aún no se ha cargado ningún archivo.")
         st.stop()
@@ -160,8 +191,8 @@ else:
 
         st.info(
             "💡 A simple vista no hay valores nulos (`NaN`), pero en el "
-            "Ítem 4 vamos a revisar si existen valores como `'unknown'` "
-            "que funcionan como nulos disfrazados."
+            "Ítem 4 vamos a revisar los valores `'unknown'`, que "
+            "funcionan como nulos disfrazados."
         )
 
     # ---------- Ítem 2: Clasificación de variables ----------
@@ -179,7 +210,88 @@ else:
             st.markdown("**Resumen**")
             st.dataframe(clasificacion["Clasificación"].value_counts())
 
-    # ---------- Ítems 3 al 10: pendientes ----------
-    for i in range(2, 10):
+    # ---------- Ítem 3: Estadísticas descriptivas ----------
+    with tabs[2]:
+        st.subheader("Estadísticas descriptivas")
+        st.markdown(
+            "Usamos `.describe()` sobre las columnas **numéricas** para "
+            "ver medidas de tendencia central (media, mediana) y de "
+            "dispersión (desviación estándar, mínimo, máximo)."
+        )
+
+        stats = analyzer.estadisticas_descriptivas()
+        st.dataframe(stats.style.format("{:.2f}"), use_container_width=True)
+
+        # Interpretación automática con f-strings, usando datos reales
+        edad_media = df["age"].mean()
+        edad_mediana = df["age"].median()
+        duracion_media = df["duration"].mean()
+        duracion_mediana = df["duration"].median()
+
+        st.markdown("**Interpretación básica:**")
+        st.markdown(
+            f"""
+            - La edad promedio de los clientes es **{edad_media:.1f} años**,
+              muy cercana a la mediana (**{edad_mediana:.0f} años**), lo que
+              sugiere una distribución bastante simétrica.
+            - La duración de la llamada tiene una media de
+              **{duracion_media:.0f} segundos**, pero una mediana de solo
+              **{duracion_mediana:.0f} segundos**. Que la media sea mucho
+              mayor que la mediana indica una distribución **sesgada a la
+              derecha**: hay llamadas muy largas (outliers) que "jalan" el
+              promedio hacia arriba.
+            - `pdays` tiene una mediana de 999, un valor que en este
+              dataset significa *"el cliente nunca fue contactado antes"* —
+              no es un número real de días, hay que tenerlo en cuenta para
+              no interpretarlo mal.
+            """
+        )
+
+    # ---------- Ítem 4: Análisis de valores faltantes ----------
+    with tabs[3]:
+        st.subheader("Análisis de valores faltantes")
+
+        st.markdown("**Valores nulos (`NaN`) reales:**")
+        nulos = analyzer.conteo_nulos()
+        if nulos.sum() == 0:
+            st.success("✅ El dataset no tiene valores nulos (`NaN`) reales en ninguna columna.")
+        else:
+            st.dataframe(nulos[nulos > 0])
+
+        st.markdown("---")
+        st.markdown(
+            "**Valores `'unknown'` (nulos disfrazados):** en encuestas y "
+            "campañas comerciales es común que la ausencia de dato se "
+            "registre como texto en vez de dejarse vacío. Aquí vemos en "
+            "qué columnas categóricas aparece `'unknown'` y con qué "
+            "frecuencia."
+        )
+
+        unknowns = analyzer.valores_unknown()
+
+        c1, c2 = st.columns([1, 1])
+        with c1:
+            st.dataframe(unknowns, use_container_width=True)
+        with c2:
+            fig, ax = plt.subplots(figsize=(6, 4))
+            sns.barplot(data=unknowns, x="Cantidad 'unknown'", y="Variable", ax=ax, color="#4C72B0")
+            ax.set_title("Cantidad de valores 'unknown' por columna")
+            st.pyplot(fig)
+
+        peor_columna = unknowns.iloc[0]
+        st.markdown(
+            f"""
+            **Discusión breve:** la columna con más valores `'unknown'` es
+            **`{peor_columna['Variable']}`**, con **{int(peor_columna["Cantidad 'unknown'"])}**
+            registros (**{peor_columna['Porcentaje']}%** del total). Es un
+            porcentaje considerable, así que más adelante habrá que decidir
+            si se trata como una categoría más (dejarla como "unknown") o
+            si se excluye del análisis según el tipo de pregunta que se
+            quiera responder.
+            """
+        )
+
+    # ---------- Ítems 5 al 10: pendientes ----------
+    for i in range(4, 10):
         with tabs[i]:
             st.info("🚧 Este ítem lo construiremos en el siguiente paso.")

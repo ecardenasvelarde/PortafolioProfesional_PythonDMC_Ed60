@@ -33,7 +33,7 @@ if modulo == "Home":
         - **Año:** 2026
 
         ### 📊 Sobre el dataset
-        `BankMarketing.csv` contiene **41,188 registros** y **21 variables**,
+        `BankMarketing.csv` contiene **21 variables**,
         con información demográfica de los clientes (edad, trabajo, estado
         civil, educación), datos de contacto de la campaña (canal, mes,
         duración de la llamada) e indicadores económicos del contexto

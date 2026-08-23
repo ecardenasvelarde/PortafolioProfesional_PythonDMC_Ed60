@@ -15,7 +15,7 @@ st.set_page_config(
 # -----------------------------------------------------------------
 # VARIABLES GLOBALES (datos del autor)
 # -----------------------------------------------------------------
-AUTOR_NOMBRE = "Tu Nombre Completo"
+AUTOR_NOMBRE = "Erick Eduardo Cárdenas Velarde"
 AUTOR_CURSO = "Especialización en Python for Analytics - DMC Ed.60"
 AUTOR_ANIO = "2026"
 

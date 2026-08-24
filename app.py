@@ -351,7 +351,249 @@ else:
             """
         )
 
-    # ---------- Ítems 6 al 10: pendientes ----------
-    for i in range(5, 10):
-        with tabs[i]:
-            st.info("🚧 Este ítem lo construiremos en el siguiente paso.")
+    # ---------- Ítem 6: Análisis de variables categóricas ----------
+    with tabs[5]:
+        st.subheader("Análisis de variables categóricas")
+        st.markdown(
+            "Para las columnas categóricas revisamos **cuántas veces** "
+            "aparece cada valor (conteo) y **qué porcentaje** representa "
+            "sobre el total (proporción)."
+        )
+
+        cat_cols = analyzer.columnas_categoricas()
+
+        col_a, col_b = st.columns([2, 1])
+        with col_a:
+            var_cat = st.selectbox("Variable categórica:", cat_cols, key="cat_var")
+        with col_b:
+            mostrar_pct = st.checkbox("Mostrar como porcentaje", value=False, key="cat_pct")
+
+        conteo = df[var_cat].value_counts()
+        if mostrar_pct:
+            datos_grafico = (conteo / conteo.sum() * 100).round(1)
+            etiqueta_x = "Porcentaje (%)"
+        else:
+            datos_grafico = conteo
+            etiqueta_x = "Cantidad"
+
+        c1, c2 = st.columns([1, 1])
+        with c1:
+            st.dataframe(datos_grafico, use_container_width=True)
+        with c2:
+            fig, ax = plt.subplots(figsize=(6, 4))
+            sns.barplot(x=datos_grafico.values, y=datos_grafico.index, ax=ax, color="#55A868")
+            ax.set_xlabel(etiqueta_x)
+            ax.set_title(f"Distribución de {var_cat}")
+            st.pyplot(fig)
+            plt.close(fig)
+
+        categoria_top = conteo.idxmax()
+        st.markdown(
+            f"**Interpretación:** la categoría más frecuente en `{var_cat}` es "
+            f"**'{categoria_top}'**, con **{conteo.max():,}** registros "
+            f"(**{conteo.max()/conteo.sum()*100:.1f}%** del total)."
+        )
+
+    # ---------- Ítem 7: Bivariado (numérico vs categórico) ----------
+    with tabs[6]:
+        st.subheader("Análisis bivariado: numérico vs categórico")
+        st.markdown(
+            "Comparamos cómo varía una variable **numérica** según el "
+            "resultado de la campaña (`y`), usando boxplots. Esto ayuda a "
+            "ver si esa variable realmente distingue a quienes aceptaron "
+            "de quienes no."
+        )
+
+        c1, c2 = st.columns(2)
+        with c1:
+            fig, ax = plt.subplots(figsize=(5, 4))
+            sns.boxplot(data=df, x="y", y="age", ax=ax, palette="Set2")
+            ax.set_title("age vs y")
+            st.pyplot(fig)
+            plt.close(fig)
+        with c2:
+            fig, ax = plt.subplots(figsize=(5, 4))
+            sns.boxplot(data=df, x="y", y="duration", ax=ax, palette="Set2")
+            ax.set_title("duration vs y")
+            st.pyplot(fig)
+            plt.close(fig)
+
+        mediana_dur_no = df[df["y"] == "no"]["duration"].median()
+        mediana_dur_yes = df[df["y"] == "yes"]["duration"].median()
+        mediana_edad_no = df[df["y"] == "no"]["age"].median()
+        mediana_edad_yes = df[df["y"] == "yes"]["age"].median()
+
+        st.markdown(
+            f"""
+            **Interpretación:**
+            - `duration`: la mediana es **{mediana_dur_no:.0f}s** para quienes
+              NO aceptaron vs **{mediana_dur_yes:.0f}s** para quienes SÍ
+              aceptaron. La diferencia es grande: llamadas más largas se
+              asocian con mayor aceptación (algo esperable, ya que una
+              llamada corta suele terminar en un rechazo rápido).
+            - `age`: la mediana es casi igual entre ambos grupos
+              ({mediana_edad_no:.0f} vs {mediana_edad_yes:.0f} años), lo que
+              sugiere que la edad por sí sola **no es un buen diferenciador**
+              de la aceptación.
+            """
+        )
+
+    # ---------- Ítem 8: Bivariado (categórico vs categórico) ----------
+    with tabs[7]:
+        st.subheader("Análisis bivariado: categórico vs categórico")
+        st.markdown(
+            "Cruzamos dos variables categóricas con `pd.crosstab()` para "
+            "ver, dentro de cada categoría, qué porcentaje aceptó la "
+            "campaña."
+        )
+
+        c1, c2 = st.columns(2)
+        with c1:
+            ct_edu = pd.crosstab(df["education"], df["y"], normalize="index") * 100
+            fig, ax = plt.subplots(figsize=(5, 4))
+            ct_edu.plot(kind="barh", stacked=True, ax=ax, color=["#C44E52", "#55A868"])
+            ax.set_title("education vs y (%)")
+            ax.set_xlabel("Porcentaje")
+            ax.legend(title="y", loc="lower right", fontsize=8)
+            st.pyplot(fig)
+            plt.close(fig)
+        with c2:
+            ct_contact = pd.crosstab(df["contact"], df["y"], normalize="index") * 100
+            fig, ax = plt.subplots(figsize=(5, 4))
+            ct_contact.plot(kind="barh", stacked=True, ax=ax, color=["#C44E52", "#55A868"])
+            ax.set_title("contact vs y (%)")
+            ax.set_xlabel("Porcentaje")
+            ax.legend(title="y", loc="lower right", fontsize=8)
+            st.pyplot(fig)
+            plt.close(fig)
+
+        pct_cel = ct_contact.loc["cellular", "yes"]
+        pct_tel = ct_contact.loc["telephone", "yes"]
+        pct_illit = ct_edu.loc["illiterate", "yes"]
+
+        st.markdown(
+            f"""
+            **Interpretación:**
+            - `contact`: contactar por **celular** logra **{pct_cel:.1f}%** de
+              aceptación, casi el triple que por **teléfono fijo**
+              (**{pct_tel:.1f}%**). Es una señal clara para priorizar el
+              canal de contacto.
+            - `education`: el grupo "illiterate" tiene la tasa de aceptación
+              más alta (**{pct_illit:.1f}%**), aunque es un grupo muy pequeño
+              en tamaño — hay que tener cuidado de no sacar conclusiones
+              fuertes de un grupo con pocos registros.
+            """
+        )
+
+    # ---------- Ítem 9: Análisis basado en parámetros seleccionados ----------
+    with tabs[8]:
+        st.subheader("Análisis interactivo según tus parámetros")
+        st.markdown(
+            "Elige tú mismo qué variables numéricas comparar (correlación) "
+            "y qué variable categórica cruzar contra `y`."
+        )
+
+        st.markdown("**a) Matriz de correlación (elige variables numéricas)**")
+        num_cols = analyzer.columnas_numericas()
+        vars_elegidas = st.multiselect(
+            "Variables numéricas a correlacionar:",
+            num_cols,
+            default=["age", "duration", "campaign"],
+            key="multi_corr"
+        )
+
+        if len(vars_elegidas) >= 2:
+            corr = df[vars_elegidas].corr()
+            fig, ax = plt.subplots(figsize=(6, 5))
+            sns.heatmap(corr, annot=True, fmt=".2f", cmap="coolwarm", center=0, ax=ax)
+            st.pyplot(fig)
+            plt.close(fig)
+        else:
+            st.warning("⚠️ Selecciona al menos 2 variables para calcular la correlación.")
+
+        st.divider()
+
+        st.markdown("**b) Aceptación (`y`) según una variable categórica**")
+        cat_cols = analyzer.columnas_categoricas()
+        cat_cols_sin_y = [c for c in cat_cols if c != "y"]
+        var_dinamica = st.selectbox("Variable categórica:", cat_cols_sin_y, key="select_dinamico")
+
+        ct = pd.crosstab(df[var_dinamica], df["y"], normalize="index") * 100
+        fig, ax = plt.subplots(figsize=(7, 4))
+        ct.plot(kind="bar", stacked=True, ax=ax, color=["#C44E52", "#55A868"])
+        ax.set_title(f"{var_dinamica} vs y (%)")
+        ax.set_ylabel("Porcentaje")
+        plt.xticks(rotation=45, ha="right")
+        st.pyplot(fig)
+        plt.close(fig)
+
+    # ---------- Ítem 10: Hallazgos clave ----------
+    with tabs[9]:
+        st.subheader("Hallazgos clave")
+
+        tasa_general = (df["y"] == "yes").mean() * 100
+
+        fig, ax = plt.subplots(figsize=(6, 4))
+        df["y"].value_counts().plot(kind="bar", ax=ax, color=["#C44E52", "#55A868"])
+        ax.set_title("Distribución general de la variable objetivo (y)")
+        ax.set_ylabel("Cantidad de clientes")
+        st.pyplot(fig)
+        plt.close(fig)
+
+        st.markdown(
+            f"""
+            **Resumen visual:** de los {len(df):,} clientes contactados en
+            la última campaña, solo el **{tasa_general:.1f}%** aceptó el
+            depósito a plazo.
+
+            **Insights principales derivados del EDA:**
+            1. La **duración de la llamada** es, por lejos, la señal más
+               fuerte de aceptación: las llamadas exitosas duran en mediana
+               casi 3 veces más que las que terminan en rechazo.
+            2. El **canal de contacto** importa: contactar por celular casi
+               triplica la tasa de aceptación frente al teléfono fijo.
+            3. La **edad** por sí sola no diferencia bien entre clientes que
+               aceptan y los que no.
+            4. Varias columnas categóricas (`default`, `education`, `housing`,
+               `loan`) tienen un porcentaje relevante de valores `'unknown'`
+               que conviene tratar con cuidado antes de sacar conclusiones.
+            5. Existe un desbalance fuerte en la variable objetivo
+               (~89% "no" vs ~11% "yes"), algo importante a tener en cuenta
+               si en el futuro se construye un modelo predictivo con estos
+               datos.
+            """
+        )
+
+    # -----------------------------------------------------------------
+    # CONCLUSIONES FINALES (sección aparte, fuera de los 10 ítems)
+    # -----------------------------------------------------------------
+    st.divider()
+    st.header("🎯 Conclusiones finales")
+
+    st.markdown(
+        """
+        1. **El canal de contacto es una palanca accionable de corto plazo.**
+           Priorizar campañas por celular sobre teléfono fijo podría mejorar
+           directamente la tasa de conversión, sin necesidad de cambiar el
+           perfil de cliente contactado.
+
+        2. **La duración de la llamada actúa como indicador de interés, no
+           como variable de decisión previa.** Es útil para *entender* qué
+           pasó en la campaña anterior, pero no se puede usar para decidir
+           a quién llamar, porque solo se conoce después de la llamada.
+
+        3. **La edad del cliente no es un criterio efectivo de segmentación**
+           para esta campaña; el equipo comercial no debería priorizar
+           contactos en función de rangos etarios.
+
+        4. **La calidad del dato en `default`, `housing` y `loan` es
+           limitada** (hasta 20.9% de "unknown" en `default`), por lo que
+           cualquier segmentación futura basada en esas variables debe
+           interpretarse con cautela.
+
+        5. **La campaña tiene un fuerte desbalance de resultados** (~89% de
+           rechazo), lo que sugiere revisar si el guion de venta o el
+           público objetivo de la campaña necesitan ajustarse, más que
+           solo optimizar el canal de contacto.
+        """
+    )

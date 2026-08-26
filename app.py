@@ -15,14 +15,6 @@ st.set_page_config(
 )
 
 # -----------------------------------------------------------------
-# VARIABLES GLOBALES (datos del autor)
-# -----------------------------------------------------------------
-AUTOR_NOMBRE = "Tu Nombre Completo"
-AUTOR_CURSO = "Especialización en Python for Analytics - DMC Ed.60"
-AUTOR_ANIO = "2026"
-
-
-# -----------------------------------------------------------------
 # FUNCIÓN PERSONALIZADA (requisito Ítem 2)
 # -----------------------------------------------------------------
 def identificar_tipo_variable(serie: pd.Series) -> str:
@@ -114,9 +106,9 @@ if modulo == "Home":
         cliente acepte o no un depósito a plazo**.
 
         ### 👤 Datos del autor
-        - **Nombre:** {AUTOR_NOMBRE}
-        - **Curso:** {AUTOR_CURSO}
-        - **Año:** {AUTOR_ANIO}
+        - **Nombre:** Erick Eduardo Cárdenas Velarde
+        - **Curso:** Especialización en Python for Analytics - DMC Ed.60
+        - **Año:** 2026
 
         ### 📊 Sobre el dataset
         `BankMarketing.csv` contiene **41,188 registros** y **21 variables**.
